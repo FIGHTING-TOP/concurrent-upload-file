@@ -131,14 +131,58 @@
         setTimeout(() => {
           this.isAnimaLoading = true;
           if (res.isSuccess) {
-            
+            this.$store.commit("picture/saveDicomAnalyzedData", res.data);
+            if (this.patientTableId) {
+              if (res.data.containOtherData) {
+                this.$confirm(`您导入的核磁影像包含其他患者影像`, this.$t("common.tips"), {
+                  confirmButtonText: "仅保留当前患者影像",
+                  cancelButtonText: "保留所有患者影像",
+                  type: "warning",
+                  showClose: false,
+                  closeOnClickModal: false
+                }).then(() => {
+                  this.dcmSaveOther("0");
+                  if (this.type == "01") {
+                    this.$router.replace({"name": "patientAddView", "params": {"type": "success"}});
+                  } else {
+                    this.$router.go(-1);
+                  }
+
+                }).catch(() => {
+                  this.dcmSaveOther("1");
+                  if (this.type == "01") {
+                    this.$router.replace({"name": "patientAddView", "params": {"type": "success"}});
+                  } else {
+                    if (!res.data.successList || !res.data.successList.length) {
+                      this.$message({
+                        message: "当前患者无新影像导入",
+                        type: "success"
+                      });
+                    }
+
+                    this.$router.replace({"name": "patientInquire"});
+                  }
+
+                });
+
+              } else {
+                if (this.type == "01") {
+                  this.$router.replace({"name": "patientAddView", "params": {"type": "success"}});
+                } else {
+                  this.$router.go(-1);
+                }
+
+              }
+            } else {
+              this.$router.push({path: "/picture/success"})
+            }
           } else {
-            this.errorTip();
+            this.errImage();
           }
         }, 3000)
 
       },
-      errorTip() {
+      errImage() {
         this.$alert(`影像导入失败`, this.$t("common.tips"), {
           confirmButtonText: "查看所有患者影像",
           callback: () => {
